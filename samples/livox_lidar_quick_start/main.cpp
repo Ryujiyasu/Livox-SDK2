@@ -38,20 +38,75 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <cmath>
+#include <time.h>
+time_t high_start_time, high_end_time;
+time_t mid_start_time, mid_end_time;
+time_t low_start_time, low_end_time;
+int high_count = 0;
+int mid_count = 0;
+int low_count = 0;
+int not_high_count = 0;
+int not_mid_count = 0;
+int not_low_count = 0;
 
 void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEthernetPacket* data, void* client_data) {
   if (data == nullptr) {
     return;
   }
-  printf("point cloud handle: %u, data_num: %d, data_type: %d, length: %d, frame_counter: %d\n",
-      handle, data->dot_num, data->data_type, data->length, data->frame_cnt);
+  if(high_count + not_high_count > 1000){
+    high_end_time = time(NULL);
+    // printf("high speed:%ld\n",high_end_time - high_start_time);
+    printf("high:%d\n",high_count*100/(high_count + not_high_count));
+    high_count = 0;
+    not_high_count = 0;
+    high_start_time = time(NULL);
+  }
+  if(mid_count + not_mid_count > 1000){
+    mid_end_time = time(NULL);
+    // printf("mid speed:%ld\n",mid_end_time - mid_start_time);
+    printf("mid:%d\n",mid_count*100/(mid_count + not_mid_count));
+    mid_count = 0;
+    not_mid_count = 0;
+    mid_start_time = time(NULL);
+  }
+  if(low_count + not_low_count > 1000){
+    low_end_time = time(NULL);
+    // printf("low speed:%ld\n",(low_end_time - low_start_time));
+    printf("low:%d\n",low_count*100/(low_count + not_low_count));
+    low_count = 0;
+    not_low_count = 0;
+    low_start_time = time(NULL);
+  }
+
 
   if (data->data_type == kLivoxLidarCartesianCoordinateHighData) {
     LivoxLidarCartesianHighRawPoint *p_point_data = (LivoxLidarCartesianHighRawPoint *)data->data;
     for (uint32_t i = 0; i < data->dot_num; i++) {
-      //p_point_data[i].x;
-      //p_point_data[i].y;
-      //p_point_data[i].z;
+      if(p_point_data[i].x == 0 && p_point_data[i].y == 0 && p_point_data[i].z == 0) {
+        continue;
+      }
+      if(p_point_data[i].y >-100 && p_point_data[i].y < 100 && p_point_data[i].x > 0 && p_point_data[i].x < 500) {
+        if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 55 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 40){
+          high_count++;
+        }else if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 70 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 55){
+          mid_count++;
+        }else if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 70){
+          low_count++;
+        }
+        
+      }else if(p_point_data[i].y >-100 && p_point_data[i].y < 100 && p_point_data[i].x > 0 && p_point_data[i].x > 500){
+        if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 55 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 40){
+          not_high_count++;
+        }else if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 70 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 55){
+          not_mid_count++;
+        }else if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 70){
+          not_low_count++;
+        }
+      }
+      // printf("%d,%d,%d,%d,%d,%d\n",low_count,not_low_count,mid_count,not_mid_count,high_count,not_high_count);
+
+       
     }
   }
   else if (data->data_type == kLivoxLidarCartesianCoordinateLowData) {
@@ -65,16 +120,15 @@ void ImuDataCallback(uint32_t handle, const uint8_t dev_type,  LivoxLidarEtherne
   if (data == nullptr) {
     return;
   } 
-  printf("Imu data callback handle:%u, data_num:%u, data_type:%u, length:%u, frame_counter:%u.\n",
-      handle, data->dot_num, data->data_type, data->length, data->frame_cnt);
+
 }
 
 // void OnLidarSetIpCallback(livox_vehicle_status status, uint32_t handle, uint8_t ret_code, void*) {
 //   if (status == kVehicleStatusSuccess) {
-//     printf("lidar set ip slot: %d, ret_code: %d\n",
+//     // printf("lidar set ip slot: %d, ret_code: %d\n",
 //       slot, ret_code);
 //   } else if (status == kVehicleStatusTimeout) {
-//     printf("lidar set ip number timeout\n");
+//     // printf("lidar set ip number timeout\n");
 //   }
 // }
      
@@ -82,8 +136,8 @@ void WorkModeCallback(livox_status status, uint32_t handle,LivoxLidarAsyncContro
   if (response == nullptr) {
     return;
   }
-  printf("WorkModeCallack, status:%u, handle:%u, ret_code:%u, error_key:%u",
-      status, handle, response->ret_code, response->error_key);
+  // printf("WorkModeCallack, status:%u, handle:%u, ret_code:%u, error_key:%u",
+  //     status, handle, response->ret_code, response->error_key);
 
 }
 
@@ -91,16 +145,16 @@ void RebootCallback(livox_status status, uint32_t handle, LivoxLidarRebootRespon
   if (response == nullptr) {
     return;
   }
-  printf("RebootCallback, status:%u, handle:%u, ret_code:%u",
-      status, handle, response->ret_code);
+  // printf("RebootCallback, status:%u, handle:%u, ret_code:%u",
+  //     status, handle, response->ret_code);
 }
 
 void SetIpInfoCallback(livox_status status, uint32_t handle, LivoxLidarAsyncControlResponse *response, void *client_data) {
   if (response == nullptr) {
     return;
   }
-  printf("LivoxLidarIpInfoCallback, status:%u, handle:%u, ret_code:%u, error_key:%u",
-      status, handle, response->ret_code, response->error_key);
+  // printf("LivoxLidarIpInfoCallback, status:%u, handle:%u, ret_code:%u, error_key:%u",
+  //     status, handle, response->ret_code, response->error_key);
 
   if (response->ret_code == 0 && response->error_key == 0) {
     LivoxLidarRequestReboot(handle, RebootCallback, nullptr);
@@ -110,7 +164,7 @@ void SetIpInfoCallback(livox_status status, uint32_t handle, LivoxLidarAsyncCont
 void QueryInternalInfoCallback(livox_status status, uint32_t handle, 
     LivoxLidarDiagInternalInfoResponse* response, void* client_data) {
   if (status != kLivoxLidarStatusSuccess) {
-    printf("Query lidar internal info failed.\n");
+    // printf("Query lidar internal info failed.\n");
     QueryLivoxLidarInternalInfo(handle, QueryInternalInfoCallback, nullptr);
     return;
   }
@@ -143,20 +197,20 @@ void QueryInternalInfoCallback(livox_status status, uint32_t handle,
     off += kv->length;
   }
 
-  printf("Host point cloud ip addr:%u.%u.%u.%u, host point cloud port:%u, lidar point cloud port:%u.\n",
-      host_point_ipaddr[0], host_point_ipaddr[1], host_point_ipaddr[2], host_point_ipaddr[3], host_point_port, lidar_point_port);
+  // printf("Host point cloud ip addr:%u.%u.%u.%u, host point cloud port:%u, lidar point cloud port:%u.\n",
+  //     host_point_ipaddr[0], host_point_ipaddr[1], host_point_ipaddr[2], host_point_ipaddr[3], host_point_port, lidar_point_port);
 
-  printf("Host imu ip addr:%u.%u.%u.%u, host imu port:%u, lidar imu port:%u.\n",
-    host_imu_ipaddr[0], host_imu_ipaddr[1], host_imu_ipaddr[2], host_imu_ipaddr[3], host_imu_data_port, lidar_imu_data_port);
+  // printf("Host imu ip addr:%u.%u.%u.%u, host imu port:%u, lidar imu port:%u.\n",
+  //   host_imu_ipaddr[0], host_imu_ipaddr[1], host_imu_ipaddr[2], host_imu_ipaddr[3], host_imu_data_port, lidar_imu_data_port);
 
 }
 
 void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, void* client_data) {
   if (info == nullptr) {
-    printf("lidar info change callback failed, the info is nullptr.\n");
+    // printf("lidar info change callback failed, the info is nullptr.\n");
     return;
   } 
-  printf("LidarInfoChangeCallback Lidar handle: %u SN: %s\n", handle, info->sn);
+  // printf("LidarInfoChangeCallback Lidar handle: %u SN: %s\n", handle, info->sn);
   
   // set the work mode to kLivoxLidarNormal, namely start the lidar
   SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, WorkModeCallback, nullptr);
@@ -173,21 +227,24 @@ void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, 
 void LivoxLidarPushMsgCallback(const uint32_t handle, const uint8_t dev_type, const char* info, void* client_data) {
    struct in_addr tmp_addr;
    tmp_addr.s_addr = handle;  
-   std::cout << "handle: " << handle << ", ip: " << inet_ntoa(tmp_addr) << ", push msg info: " << std::endl;
-   std::cout << info << std::endl;
+  //  std::cout << "handle: " << handle << ", ip: " << inet_ntoa(tmp_addr) << ", push msg info: " << std::endl;
+  //  std::cout << info << std::endl;
   return;
 }
 
 int main(int argc, const char *argv[]) {
+  high_start_time = time(NULL);
+  mid_start_time = time(NULL);
+  low_start_time = time(NULL);
   if (argc != 2) {
-    printf("Params Invalid, must input config path.\n");
+    // printf("Params Invalid, must input config path.\n");
     return -1;
   }
   const std::string path = argv[1];
 
   // REQUIRED, to init Livox SDK2
   if (!LivoxLidarSdkInit(path.c_str())) {
-    printf("Livox Init Failed\n");
+    // printf("Livox Init Failed\n");
     LivoxLidarSdkUninit();
     return -1;
   }
