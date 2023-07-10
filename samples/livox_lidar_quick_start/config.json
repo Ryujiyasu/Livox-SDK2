@@ -1,4 +1,8 @@
 {
+	"lidar_log_enable": true,
+    "lidar_log_cache_size_MB": 500,
+    "lidar_log_path": "./",
+	
 	"MID360": {
 		"lidar_net_info" : {
 			"cmd_data_port": 56100,

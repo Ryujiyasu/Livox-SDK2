@@ -1,36 +1,10 @@
-//
-// The MIT License (MIT)
-//
-// Copyright (c) 2022 Livox. All rights reserved.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-
+#include <syslog.h>
 #include "livox_lidar_def.h"
 #include "livox_lidar_api.h"
 
-#ifdef _WIN32
-#include <winsock.h>
-#else
+
 #include <unistd.h>
 #include <arpa/inet.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +14,7 @@
 #include <iostream>
 #include <cmath>
 #include <time.h>
+
 time_t high_start_time, high_end_time;
 time_t mid_start_time, mid_end_time;
 time_t low_start_time, low_end_time;
@@ -57,7 +32,8 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(high_count + not_high_count > 1000){
     high_end_time = time(NULL);
     // printf("high speed:%ld\n",high_end_time - high_start_time);
-    printf("high:%d\n",high_count*100/(high_count + not_high_count));
+    syslog(LOG_NOTICE,"high:%d\n",high_count*100/(high_count + not_high_count));
+
     high_count = 0;
     not_high_count = 0;
     high_start_time = time(NULL);
@@ -65,7 +41,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(mid_count + not_mid_count > 1000){
     mid_end_time = time(NULL);
     // printf("mid speed:%ld\n",mid_end_time - mid_start_time);
-    printf("mid:%d\n",mid_count*100/(mid_count + not_mid_count));
+    syslog(LOG_NOTICE,"mid:%d\n",mid_count*100/(mid_count + not_mid_count));
     mid_count = 0;
     not_mid_count = 0;
     mid_start_time = time(NULL);
@@ -73,7 +49,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(low_count + not_low_count > 1000){
     low_end_time = time(NULL);
     // printf("low speed:%ld\n",(low_end_time - low_start_time));
-    printf("low:%d\n",low_count*100/(low_count + not_low_count));
+    syslog(LOG_NOTICE,"low:%d\n",low_count*100/(low_count + not_low_count));
     low_count = 0;
     not_low_count = 0;
     low_start_time = time(NULL);
@@ -233,6 +209,7 @@ void LivoxLidarPushMsgCallback(const uint32_t handle, const uint8_t dev_type, co
 }
 
 int main(int argc, const char *argv[]) {
+  openlog("newsyslog", LOG_CONS|LOG_PID, LOG_USER);
   high_start_time = time(NULL);
   mid_start_time = time(NULL);
   low_start_time = time(NULL);
@@ -261,12 +238,10 @@ int main(int argc, const char *argv[]) {
   // REQUIRED, to get a handle to targeted lidar and set its work mode to NORMAL
   SetLivoxLidarInfoChangeCallback(LidarInfoChangeCallback, nullptr);
 
-#ifdef WIN32
-  Sleep(300000);
-#else
   sleep(300);
-#endif
+
   LivoxLidarSdkUninit();
-  printf("Livox Quick Start Demo End!\n");
+  syslog(LOG_NOTICE, "Livox Quick Start Demo End!\n");
+  closelog();
   return 0;
 }
