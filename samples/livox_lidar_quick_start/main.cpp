@@ -29,7 +29,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if (data == nullptr) {
     return;
   }
-  if(high_count + not_high_count > 1000){
+  if(high_end_time - high_start_time >= 1){
     high_end_time = time(NULL);
     // printf("high speed:%ld\n",high_end_time - high_start_time);
     syslog(LOG_NOTICE,"high:%d\n",high_count*100/(high_count + not_high_count));
@@ -38,7 +38,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
     not_high_count = 0;
     high_start_time = time(NULL);
   }
-  if(mid_count + not_mid_count > 1000){
+  if(mid_end_time - mid_start_time >= 1){
     mid_end_time = time(NULL);
     // printf("mid speed:%ld\n",mid_end_time - mid_start_time);
     syslog(LOG_NOTICE,"mid:%d\n",mid_count*100/(mid_count + not_mid_count));
@@ -46,7 +46,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
     not_mid_count = 0;
     mid_start_time = time(NULL);
   }
-  if(low_count + not_low_count > 1000){
+  if(low_end_time - low_start_time >= 1){
     low_end_time = time(NULL);
     // printf("low speed:%ld\n",(low_end_time - low_start_time));
     syslog(LOG_NOTICE,"low:%d\n",low_count*100/(low_count + not_low_count));
@@ -63,7 +63,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
         continue;
       }
       if(p_point_data[i].y >-100 && p_point_data[i].y < 100 && p_point_data[i].x > 0 && p_point_data[i].x < 500) {
-        if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 55 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 40){
+        if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 55){
           high_count++;
         }else if(std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 <= 70 && std::atan2(p_point_data[i].x ,p_point_data[i].z ) * 180 / 3.1415926 > 55){
           mid_count++;
