@@ -32,7 +32,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(high_end_time - high_start_time >= 1){
     high_end_time = time(NULL);
     // printf("high speed:%ld\n",high_end_time - high_start_time);
-    syslog(LOG_NOTICE,"high:%d\n",high_count*100/(high_count + not_high_count));
+    syslog(LOG_NOTICE,"high:%d\n",high_count);
 
     high_count = 0;
     not_high_count = 0;
@@ -41,7 +41,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(mid_end_time - mid_start_time >= 1){
     mid_end_time = time(NULL);
     // printf("mid speed:%ld\n",mid_end_time - mid_start_time);
-    syslog(LOG_NOTICE,"mid:%d\n",mid_count*100/(mid_count + not_mid_count));
+    syslog(LOG_NOTICE,"mid:%d\n",mid_count);
     mid_count = 0;
     not_mid_count = 0;
     mid_start_time = time(NULL);
@@ -49,7 +49,7 @@ void PointCloudCallback(uint32_t handle, const uint8_t dev_type, LivoxLidarEther
   if(low_end_time - low_start_time >= 1){
     low_end_time = time(NULL);
     // printf("low speed:%ld\n",(low_end_time - low_start_time));
-    syslog(LOG_NOTICE,"low:%d\n",low_count*100/(low_count + not_low_count));
+    syslog(LOG_NOTICE,"low:%d\n",low_count);
     low_count = 0;
     not_low_count = 0;
     low_start_time = time(NULL);
